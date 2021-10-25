@@ -26,22 +26,23 @@ class ResNet(nn.Module):
         do = self.do(h1 + h2)
         logits = self.l3(do)
         return logits
+        
 model = ResNet(0.1)
-
-
-
-optimiser = optim.SGD(model.parameters(), lr=1e-2)
-
-loss = nn.CrossEntropyLoss()
 
 train_data = datasets.MNIST('data', train=True, download=True, transform=transforms.ToTensor())
 train, val = random_split(train_data, [55000, 5000])
 train_loader = DataLoader(train, batch_size=32)
 val_loader = DataLoader(val, batch_size=32)
 
+optimiser = optim.SGD(model.parameters(), lr=1e-2)
+
+loss = nn.CrossEntropyLoss()
+
 nb_epochs = 5
 for epoch in range(nb_epochs):
     losses = list()
+    accuracies = list()
+    model.train()
     for batch in train_loader:
         x, y = batch
         b = x.size(0)
@@ -57,9 +58,12 @@ for epoch in range(nb_epochs):
         optimiser.step()
 
         losses.append(J.item())
-    print(f'Epoch: {epoch +1 }, train loss: {torch.tensor(losses).mean():.2f}')
+        accuracies.append(y.eq(l.argmax(dim=1)).float().mean())
+    print(f'Epoch: {epoch +1 }, train loss: {torch.tensor(losses).mean():.2f}, train acc: {torch.tensor(accuracies).mean():.2f}')
 
     losses = list()
+    accuracies = list()
+    model.eval()
     for batch in train_loader:
         x, y = batch
         b = x.size(0)
@@ -69,5 +73,6 @@ for epoch in range(nb_epochs):
             l = model(x)
         J = loss(l, y)
         losses.append(J.item())
+        accuracies.append(y.eq(l.argmax(dim=1)).float().mean())
 
-    print(f'Epoch: {epoch + 1}, val loss: {torch.tensor(losses).mean():.2f}')
+    print(f'Epoch: {epoch + 1}, val loss: {torch.tensor(losses).mean():.2f}, val acc: {torch.tensor(accuracies).mean():.2f}')
